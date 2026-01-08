@@ -9,37 +9,36 @@ export const generateOdooModuleCode = async (
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `
-    Eres un ingeniero senior experto en Odoo 18 y Localización Española / Contabilidad.
-    Genera un módulo de Odoo 18 profesional para integrar Mirakl y TEMU.
-
-    DISEÑO Y ESTILOS:
-    - Las vistas XML deben heredar y usar las clases nativas de Odoo 18 (o_form_view, o_list_view, o_group, o_inner_group).
-    - El diseño debe integrarse perfectamente con el backend de Odoo 18 Enterprise.
-    - Usa widgets nativos como 'monetary', 'status_bar', 'many2one_avatar_user'.
-
-    CAMPOS FINANCIEROS CRÍTICOS (sale.order):
-    - marketplace_id: Char (ID original)
-    - transaction_ref: Char (Referencia de pago/transacción)
-    - payment_method_name: Char (Método detectado)
-    - commission_amount: Monetary (Comisión del marketplace)
-    - payment_journal_id: Many2one (Diario contable específico del canal)
-
-    LÓGICA DE NEGOCIO:
-    1. Registro de Pago: Al confirmar el pedido, si viene de marketplace y tiene transaction_ref, crear un account.payment en el diario configurado y conciliarlo automáticamente con la factura.
-    2. Fiscalidad: Implementar l10n_es_sii para que las facturas se marquen con el tipo de factura rectificativa o simplificada según corresponda.
-    3. Mappings: Los transportistas se mapean mediante un modelo 'marketplace.delivery.carrier.mapping'.
-
-    ESTRUCTURA DE ARCHIVOS:
-    - __manifest__.py (Dependencias: sale_management, account, l10n_es_sii)
-    - models/marketplace_connector.py (Lógica base)
-    - models/sale_order.py (Herencia con campos financieros)
-    - views/marketplace_connector_views.xml (Vista ágil con pestañas)
-    - views/sale_order_views.xml (Añadir pestaña "Finanzas Marketplace")
-    - security/ir.model.access.csv
-
-    DATOS CONFIG: ${JSON.stringify(marketplaces)}
+    Actúa como un Ingeniero Senior de Odoo. Genera el código fuente completo de un módulo para Odoo 18 Enterprise llamado "bridge_temu_kl".
     
-    RESPUESTA: JSON Array de objetos {name, path, language, content}.
+    OBJETIVO: Sincronizar pedidos desde Mirakl/Temu hacia Odoo 18, gestionando clientes, productos, pagos y entregas.
+    
+    REQUISITO CRÍTICO DE DEDUPLICACIÓN:
+    Los contactos DEBEN estar identificados para no repetirlos. 
+    Implementa en 'res.partner' una lógica de búsqueda robusta que:
+    1. Busque por NIF/CIF (campo 'vat') si está disponible.
+    2. Si no, busque por Email.
+    3. Si no existe, cree el registro vinculándolo a la referencia externa del marketplace.
+
+    ESTRUCTURA DE ARCHIVOS REQUERIDA:
+    1. __manifest__.py: Metadatos para Odoo 18.
+    2. models/bridge_instance.py: Modelo principal de configuración de conexión.
+    3. models/res_partner.py: Lógica de deduplicación avanzada.
+    4. models/sale_order.py: Herencia para inyectar datos del marketplace y lógica de creación de pedidos.
+    5. models/res_config_settings.py: Integración en el panel de Ajustes de Odoo.
+    6. views/bridge_instance_views.xml: Vistas de lista y formulario para las instancias.
+    7. views/res_config_settings_views.xml: Interfaz de configuración del módulo en Ajustes.
+    8. security/ir.model.access.csv: Permisos de acceso.
+
+    ESPECIFICACIONES TÉCNICAS:
+    - Odoo 18 usa Python 3.10+.
+    - Usa 'ir.config_parameter' para almacenar llaves de API de forma segura.
+    - Implementa un 'ir.cron' para la descarga automática.
+    
+    CONTEXTO ACTUAL DE CONFIGURACIÓN:
+    ${JSON.stringify(marketplaces[0])}
+
+    RESPUESTA: Retorna EXCLUSIVAMENTE un JSON Array de objetos {path: string, content: string}. No incluyas explicaciones fuera del JSON.
   `;
 
   const response = await ai.models.generateContent({
@@ -52,19 +51,20 @@ export const generateOdooModuleCode = async (
         items: {
           type: Type.OBJECT,
           properties: {
-            name: { type: Type.STRING },
             path: { type: Type.STRING },
-            language: { type: Type.STRING },
             content: { type: Type.STRING }
           },
-          required: ["name", "path", "language", "content"]
+          required: ["path", "content"]
         }
       }
     }
   });
 
-  const text = response.text;
-  if (!text) throw new Error("No se pudo generar el código");
-
-  return JSON.parse(text.trim());
+  const files = JSON.parse(response.text || "[]");
+  return files.map((f: any) => ({
+    name: f.path.split('/').pop(),
+    path: f.path,
+    language: f.path.endsWith('.py') ? 'python' : 'xml',
+    content: f.content
+  }));
 };

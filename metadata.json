@@ -1,6 +1,6 @@
 {
-  "name": "Odoo 18 Mirakl Bridge Builder",
-  "description": "A developer tool to generate and simulate Odoo 18 modules for Mirakl Marketplace integration using Gemini AI.",
+  "name": "Odoo 18 Mirakl Bridge",
+  "description": "An importer tool to download order from marketplaces to odoo18, including customers, payments, transaccion, delieries  for Mirakl y Temu",
   "requestFramePermissions": [
     "geolocation"
   ]

@@ -1,4 +1,5 @@
 
+
 export type MarketplaceType = 'mirakl' | 'temu';
 export type EnvironmentMode = 'production' | 'sandbox';
 
@@ -34,11 +35,9 @@ export interface MarketplaceConfig {
   appKey?: string;
   appSecret?: string;
   baseUrl: string;
-  // Test credentials
   testApiKey?: string;
   testBaseUrl?: string;
   testShopId?: string;
-  
   paymentJournalId: string;
   paymentMethodId: string;
   carrierMappings: CarrierMapping[];
@@ -50,30 +49,11 @@ export interface MarketplaceConfig {
   autoConfirm?: boolean;
   createInvoice?: boolean;
   syncTracking?: boolean;
-}
-
-export type OrderStatus = 'pending' | 'ready' | 'shipped' | 'cancelled';
-
-export interface Order {
-  id: string;
-  marketplaceId: string;
-  externalReference: string;
-  transactionRef: string; // Nuevo: Referencia de transacción de pago
-  paymentMethod: string;  // Nuevo: Método de pago detectado
-  customerName: string;
-  nif?: string;
-  date: string;
-  total: number;
-  status: OrderStatus;
-  paymentStatus: 'paid' | 'pending'; // Nuevo: Estado financiero
-  hasInvoice: boolean;
-  hasLabel: boolean;
-}
-
-export interface FiscalConfig {
-  enableOss: boolean;
-  validateVies: boolean;
-  defaultFiscalPositionId: string;
+  // Nuevos campos para deduplicación
+  deduplicatePartners?: boolean;
+  partnerMatchField?: 'vat' | 'email' | 'ref';
+  updatePartnerData?: boolean;
+  defaultCompanyId?: string;
 }
 
 export interface GeneratedFile {
@@ -83,13 +63,21 @@ export interface GeneratedFile {
   content: string;
 }
 
+export interface FiscalConfig {
+  enableOss: boolean;
+  validateVies: boolean;
+  defaultFiscalPositionId: string;
+}
+
+// Added AppStatus enum to fix export error in GeneratorPage.tsx
 export enum AppStatus {
   IDLE = 'IDLE',
   GENERATING = 'GENERATING',
   COMPLETED = 'COMPLETED',
-  ERROR = 'ERROR'
+  ERROR = 'ERROR',
 }
 
+// Added SimulationStep interface to fix export error in SimulatorPage.tsx
 export interface SimulationStep {
   id: number;
   title: string;
