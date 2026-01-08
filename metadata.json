@@ -1,0 +1,7 @@
+{
+  "name": "Odoo 18 Mirakl Bridge Builder",
+  "description": "A developer tool to generate and simulate Odoo 18 modules for Mirakl Marketplace integration using Gemini AI.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
